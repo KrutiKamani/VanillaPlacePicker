@@ -1,7 +1,7 @@
 package com.vanillaplacepicker.data.common
 
-import com.vanillaplacepicker.data.VanillaAddress
 import com.vanillaplacepicker.data.SearchAddressResponse
+import com.vanillaplacepicker.data.VanillaAddress
 
 object AddressMapperPlacePicker : BaseMapper<SearchAddressResponse.Results, VanillaAddress>() {
 

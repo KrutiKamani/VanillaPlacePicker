@@ -15,6 +15,14 @@
             android:name="com.vanillaplacepicker.presentation.map.VanillaMapActivity"
             android:theme="@style/AppTheme.TranslucentStatus" />
 
+        <activity
+            android:name=".presentation.mapbox.map.VanillaMapBoxActivity"
+            android:theme="@style/AppTheme.TranslucentStatus" />
+
+        <activity
+                android:name=".presentation.mapbox.autocomplete.VanillaMapBoxAutoCompleteActivity"
+                android:theme="@style/AppTheme" />
+
         <service
             android:name="com.vanillaplacepicker.service.FetchAddressIntentService"
             android:exported="false" />

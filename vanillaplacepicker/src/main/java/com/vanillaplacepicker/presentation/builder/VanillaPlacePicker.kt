@@ -4,9 +4,12 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import com.vanillaplacepicker.domain.common.Style
 import com.vanillaplacepicker.extenstion.isRequiredField
 import com.vanillaplacepicker.presentation.autocomplete.VanillaAutocompleteActivity
 import com.vanillaplacepicker.presentation.map.VanillaMapActivity
+import com.vanillaplacepicker.presentation.mapbox.autocomplete.VanillaMapBoxAutoCompleteActivity
+import com.vanillaplacepicker.presentation.mapbox.map.VanillaMapBoxActivity
 import com.vanillaplacepicker.utils.BundleUtils
 import com.vanillaplacepicker.utils.KeyUtils
 
@@ -278,4 +281,120 @@ class VanillaPlacePicker {
             return intent
         }
     }
+
+    class MapBoxBuilder(private val context: Context) {
+        private var accessToken: String? = null
+        private var isMapEnable: Boolean = false
+        private var latitude: Double? = null
+        private var longitude: Double? = null
+        private var minCharLimit: Int? = null
+        private var style = Style.MAPBOX_STREETS
+        private var styleUrl: String? = null
+        private var language: String? = null
+
+        /**
+         * To enable map view with place picker
+         */
+        fun enableMap(): MapBoxBuilder {
+            this.isMapEnable = true
+            return this
+        }
+
+        /**
+         * Request with default latitude & longitude for near by places
+         */
+        fun withLocation(latitude: Double, longitude: Double): MapBoxBuilder {
+            this.latitude = latitude
+            this.longitude = longitude
+            return this
+        }
+
+        fun setMapStyle(style: Style): MapBoxBuilder {
+            this.style = style
+            return this
+        }
+
+        fun setMapStyle(styleUrl: String): MapBoxBuilder {
+            this.styleUrl = styleUrl
+            return this
+        }
+
+        /**
+         * Restrict user input limit to minimum char
+         */
+        fun setMinCharLimit(minCharLimit: Int): MapBoxBuilder {
+            this.minCharLimit = minCharLimit
+            return this
+        }
+
+        fun setAccessToken(accessToken: String): MapBoxBuilder {
+            this.accessToken = accessToken
+            return this
+        }
+
+        fun setLanguage(language: String): MapBoxBuilder {
+            this.language = language
+            return this
+        }
+
+        fun build(): Intent {
+            val intent = if (isMapEnable) {
+                Intent(context, VanillaMapBoxActivity::class.java)
+            } else {
+                Intent(context, VanillaMapBoxAutoCompleteActivity::class.java)
+            }
+
+            if (accessToken.isRequiredField()){
+                intent.putExtra(KeyUtils.MAPBOX_ACCESS_TOKEN, accessToken)
+            } else {
+                throw RuntimeException("You must provide a Mapbox API access token for Mapbox tile sources.")
+            }
+
+            latitude?.let {
+                intent.putExtra(KeyUtils.LATITUDE, it)
+            }
+
+            longitude?.let {
+                intent.putExtra(KeyUtils.LONGITUDE, it)
+            }
+
+            minCharLimit?.let {
+                intent.putExtra(KeyUtils.MIN_CHAR_LIMIT, it)
+            }
+
+            language?.let {
+                intent.putExtra(KeyUtils.LANGUAGE, it)
+            }
+
+            val mapStyle = findStyle(style)
+            intent.putExtra(KeyUtils.MAPBOX_MAP_STYLE, mapStyle)
+
+            styleUrl?.let {
+                intent.putExtra(KeyUtils.MAPBOX_MAP_STYLE_URL, it)
+            }
+
+            return intent
+        }
+
+        private fun findStyle(style: Style): String {
+            when (style) {
+                Style.MAPBOX_STREETS -> {
+                    return com.mapbox.mapboxsdk.maps.Style.MAPBOX_STREETS
+                }
+                Style.SATELLITE -> {
+                    return com.mapbox.mapboxsdk.maps.Style.SATELLITE
+                }
+                Style.DARK -> {
+                    return com.mapbox.mapboxsdk.maps.Style.DARK
+                }
+                Style.OUTDOORS -> {
+                    return com.mapbox.mapboxsdk.maps.Style.OUTDOORS
+                }
+                Style.LIGHT -> {
+                    return com.mapbox.mapboxsdk.maps.Style.LIGHT
+                }
+            }
+        }
+    }
+
 }

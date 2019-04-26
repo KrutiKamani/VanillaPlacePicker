@@ -7,6 +7,7 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.mindinventory.placepicker.R
 import com.vanillaplacepicker.data.VanillaAddress
+import com.vanillaplacepicker.domain.common.Style
 import com.vanillaplacepicker.extenstion.showView
 import com.vanillaplacepicker.presentation.builder.VanillaPlacePicker
 import com.vanillaplacepicker.utils.KeyUtils
@@ -55,6 +56,17 @@ class SampleActivity : AppCompatActivity(), View.OnClickListener {
                     .zoneDefaultLocale(true)
                     .build()
                 startActivityForResult(intent, KeyUtils.REQUEST_PLACE_PICKER)
+
+                // For Mapbox
+//                val intent= VanillaPlacePicker.MapBoxBuilder(this)
+//                    .setAccessToken(resources.getString(R.string.mapbox_access_token))
+//                    .withLocation(23.057582, 72.534458)
+//                    .enableMap()
+//                    .setLanguage("en")
+////                    .setMapStyle("mapbox://styles/kruti/cjuw8s1ci1a111fqm0tac89p4")
+//                    .setMapStyle(Style.MAPBOX_STREETS)
+//                    .build()
+//                startActivityForResult(intent, KeyUtils.REQUEST_PLACE_PICKER)
             }
         }
     }

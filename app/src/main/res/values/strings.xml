@@ -4,5 +4,7 @@
     <string name="place_picker_map">Place Picker\n(Map)</string>
     <string name="selected_place">Selected Place</string>
     <!--Google Map Key-->
-    <string name="google_maps_key">YOUR_API_KEY_HERE</string>
+    <string name="google_maps_key">AIzaSyBNHdZqfcnhtmLcH-L-YVf_xH4aQYAbYgo</string>
+    <!-- Mapbox access token -->
+    <string name="mapbox_access_token">pk.eyJ1Ijoia3J1dGkiLCJhIjoiY2p1a3N6dGFqMXNqeDN5cGdiMnR4ZDRseCJ9.UnQZYrbArwNQ9Q_dmDaHTw</string>
 </resources>

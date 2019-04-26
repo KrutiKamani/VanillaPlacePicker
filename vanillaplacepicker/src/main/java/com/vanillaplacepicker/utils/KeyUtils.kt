@@ -41,6 +41,9 @@ object KeyUtils {
     const val MAP_STYLE_JSON_RES_ID = "mapStyleJSONResId"
     const val MAP_STYLE_STRING = "mapStyleString"
     const val MAP_PIN_DRAWABLE = "mapPinDrawable"
+    const val MAPBOX_MAP_STYLE = "mapBoxMapStyle"
+    const val MAPBOX_MAP_STYLE_URL = "mapBoxMapStyleURL"
+    const val MAPBOX_ACCESS_TOKEN = "access_token"
 
     // status
     const val OK = "OK"
