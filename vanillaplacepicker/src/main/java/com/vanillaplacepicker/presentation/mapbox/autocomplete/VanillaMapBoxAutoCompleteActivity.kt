@@ -26,10 +26,11 @@ class VanillaMapBoxAutoCompleteActivity : VanillaBaseViewModelActivity<VanillaMa
     private val TAG = VanillaMapBoxAutoCompleteActivity::class.java.simpleName
 
     private var accessToken: String? = null
-
     private var minCharLimit: Int = 3
-
+    private var limit: Int? = null
     private var language: String? = null
+    private var proximity: String? = null
+    private var types: String? = null
 
     private val autoCompleteAdapter by lazy { VanillaMapBoxAutoCompleteAdapter(this::onItemSelected) }
 
@@ -53,8 +54,17 @@ class VanillaMapBoxAutoCompleteActivity : VanillaBaseViewModelActivity<VanillaMa
         // call this method only once
         val hashMap = HashMap<String, String>()
         hashMap[KeyUtils.MAPBOX_ACCESS_TOKEN] = accessToken!!
+        limit?.let {
+            hashMap[KeyUtils.LIMIT] = limit.toString()
+        }
         language?.let {
             hashMap.put(KeyUtils.LANGUAGE, it)
+        }
+        proximity?.let {
+            hashMap.put(KeyUtils.PROXIMITY, it)
+        }
+        types?.let {
+            hashMap.put(KeyUtils.TYPES, it)
         }
 
         viewModel.configureAutoComplete(minCharLimit, hashMap)
@@ -77,6 +87,18 @@ class VanillaMapBoxAutoCompleteActivity : VanillaBaseViewModelActivity<VanillaMa
 
         if (hasExtra(KeyUtils.MIN_CHAR_LIMIT)) {
             minCharLimit = intent.getIntExtra(KeyUtils.MIN_CHAR_LIMIT, 3)
+        }
+
+        if (hasExtra(KeyUtils.LIMIT)) {
+            limit = intent.getIntExtra(KeyUtils.LIMIT, 5)
+        }
+
+        if (hasExtra(KeyUtils.PROXIMITY)) {
+            proximity = intent.getStringExtra(KeyUtils.PROXIMITY)
+        }
+
+        if (hasExtra(KeyUtils.TYPES)) {
+            types = intent.getStringExtra(KeyUtils.TYPES)
         }
     }
 

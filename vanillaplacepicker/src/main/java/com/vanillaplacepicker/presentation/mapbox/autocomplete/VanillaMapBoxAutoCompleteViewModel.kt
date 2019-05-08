@@ -30,7 +30,7 @@ class VanillaMapBoxAutoCompleteViewModel : VanillaBaseViewModel() {
             .distinctUntilChanged()
             .filter { it.trim().length >= minCharLimit }
             .flatMap {
-                callMApBoxGeoCodingAPI(hashMap, it)
+                callMapBoxGeoCodingAPI(hashMap, it)
             }
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
@@ -60,31 +60,7 @@ class VanillaMapBoxAutoCompleteViewModel : VanillaBaseViewModel() {
         autoCompletePublishSubject.accept(query.trim())
     }
 
-/*    private fun callMapBoxGeoCodingAPI(result: String, hashMap: HashMap<String, String>) {
-        autoCompleteLiveData.value = Resource(Status.LOADING)
-        val client = MapboxGeocoding.builder()
-            .accessToken(hashMap[KeyUtils.MAPBOX_ACCESS_TOKEN]!!)
-            .query(result)
-            .languages("en")
-            .build()
-
-        client.enqueueCall(object : Callback<GeocodingResponse> {
-            override fun onFailure(call: Call<GeocodingResponse>, t: Throwable) {
-                autoCompleteLiveData.value = Resource(Status.ERROR, t)
-            }
-
-            override fun onResponse(call: Call<GeocodingResponse>, response: Response<GeocodingResponse>) {
-                if (response.isSuccessful && response.body() != null ) {
-                    autoCompleteLiveData.value = Resource(Status.SUCCESS)
-                    onAutoCompleteResultReceived(response.body()!!)
-                } else {
-                    autoCompleteLiveData.value = Resource(Status.ERROR)
-                }
-            }
-        })
-    }*/
-
-    private fun callMApBoxGeoCodingAPI(hashMap: HashMap<String, String>, query: String): Observable<MapBoxGeoCoderAddressResponse> {
+    private fun callMapBoxGeoCodingAPI(hashMap: HashMap<String, String>, query: String): Observable<MapBoxGeoCoderAddressResponse> {
         return WebApiClient.webApiMapBox.searchMapBoxPlace(query, hashMap)
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())

@@ -54,7 +54,7 @@ dependencies {
     implementation 'com.jakewharton.rxrelay2:rxrelay:2.1.0'
 
     // MapBox
-    implementation ('com.mapbox.mapboxsdk:mapbox-android-sdk:7.3.0'){
+    implementation ('com.mapbox.mapboxsdk:mapbox-android-sdk:7.3.2'){
         exclude group: 'group_name', module: 'module_name'
     }
 

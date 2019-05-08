@@ -3,11 +3,17 @@ package com.vanillaplacepicker.presentation.mapbox.map
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
+import android.content.IntentSender
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.widget.Toast
 import androidx.lifecycle.ViewModelProviders
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.LocationSettingsRequest
+import com.google.android.gms.location.LocationSettingsStatusCodes
 import com.mapbox.android.core.location.LocationEngine
 import com.mapbox.android.core.location.LocationEngineCallback
 import com.mapbox.android.core.location.LocationEngineProvider
@@ -27,13 +33,11 @@ import com.mapbox.mapboxsdk.maps.OnMapReadyCallback
 import com.vanillaplacepicker.R
 import com.vanillaplacepicker.data.common.AddressMapperMapBoxMap
 import com.vanillaplacepicker.domain.common.SafeObserver
-import com.vanillaplacepicker.extenstion.hasExtra
-import com.vanillaplacepicker.extenstion.hideView
-import com.vanillaplacepicker.extenstion.isRequiredField
-import com.vanillaplacepicker.extenstion.showView
+import com.vanillaplacepicker.extenstion.*
 import com.vanillaplacepicker.presentation.common.VanillaBaseViewModelActivity
 import com.vanillaplacepicker.presentation.mapbox.autocomplete.VanillaMapBoxAutoCompleteActivity
 import com.vanillaplacepicker.utils.KeyUtils
+import com.vanillaplacepicker.utils.Logger
 import com.vanillaplacepicker.utils.SharedPrefs
 import kotlinx.android.synthetic.main.activity_mapbox_map.*
 import kotlinx.android.synthetic.main.toolbar.*
@@ -57,7 +61,10 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
     private var mapStyle: String? = null
     private var mapStyleUrl: String? = null
     private var minCharLimit: Int = 3
+    private var limit: Int? = null
     private var language: String? = null
+    private var proximity: String? = null
+    private var types: String? = null
 
     private var permissionsManager: PermissionsManager = PermissionsManager(this)
     private val sharedPrefs by lazy { SharedPrefs(this) }
@@ -77,7 +84,6 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
         return R.layout.activity_mapbox_map
     }
 
-
     override fun initViews() {
         super.initViews()
         supportActionBar?.hide()
@@ -85,8 +91,8 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
         ivBack.setOnClickListener(this)
         ivDone.setOnClickListener(this)
         tvAddress.setOnClickListener(this)
+        iv_my_location.setOnClickListener(this)
 
-//        mapView?.onCreate(savedInstanceState)
         mapView?.getMapAsync(this)
     }
 
@@ -119,6 +125,18 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
         if (hasExtra(KeyUtils.MIN_CHAR_LIMIT)) {
             minCharLimit = intent.getIntExtra(KeyUtils.MIN_CHAR_LIMIT, 3)
         }
+
+        if (hasExtra(KeyUtils.LIMIT)) {
+            limit = intent.getIntExtra(KeyUtils.LIMIT, 5)
+        }
+
+        if (hasExtra(KeyUtils.PROXIMITY)) {
+            proximity = intent.getStringExtra(KeyUtils.PROXIMITY)
+        }
+
+        if (hasExtra(KeyUtils.TYPES)) {
+            types = intent.getStringExtra(KeyUtils.TYPES)
+        }
     }
 
     override fun initLiveDataObservers() {
@@ -137,9 +155,10 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
 
             // Map is set up and the style has loaded. Now you can add data or make other map adjustments
             if (!isRequestedWithLocation) {
+                iv_my_location.visibility = View.VISIBLE
                 // Check if permissions are enabled and if not request
                 if (PermissionsManager.areLocationPermissionsGranted(this)) {
-                    getLocation()
+                    startLocationUpdates()
                 } else {
                     requestForLocationPermission()
                 }
@@ -166,7 +185,7 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
             null
         )
 
-        mapBoxMap?.setPadding(0, 256, 0, 0)
+//        mapBoxMap?.setPadding(0, 256, 0, 0)
         mapBoxMap?.addOnCameraMoveListener {
             tvAddress.text = getString(R.string.searching)
             ivDone.hideView()
@@ -201,11 +220,10 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
             }
 
             override fun onResponse(call: Call<GeocodingResponse>, response: Response<GeocodingResponse>) {
-                if (response.body() != null) {
+                if (response.body() != null && response.body()!!.features().isNotEmpty()) {
 
                     selectedPlace = response.body()!!.features()[0]
                     if (selectedPlace != null) {
-                        // Get the first Feature from the successful geocoding response
                         val address = selectedPlace!!.placeName()
                         if (address.isRequiredField()) {
                             ivDone.showView()
@@ -248,11 +266,58 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
 
     override fun onPermissionResult(granted: Boolean) {
         if (granted) {
-            getLocation()
+            startLocationUpdates()
         } else {
-            Toast.makeText(this, "Permission denied", Toast.LENGTH_LONG).show()
-            finish()
+            showAlertDialog(
+                R.string.missing_permission_message,
+                R.string.missing_permission_title,
+                R.string.permission,
+                R.string.cancel, {
+                    // this mean user has clicked on permission button to update run time permission.
+                    openAppSetting()
+                }
+            )
         }
+    }
+
+    private val locationRequest = LocationRequest().apply {
+        this.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        this.numUpdates = 1
+    }
+
+    private val locationSettingRequest = LocationSettingsRequest.Builder()
+        .addLocationRequest(locationRequest)
+
+    /**
+     * this method will check required for location and according to result it will go ahead for fetching location.
+     */
+    private fun startLocationUpdates() {
+        // Begin by checking if the device has the necessary location settings.
+        LocationServices.getSettingsClient(this).checkLocationSettings(locationSettingRequest.build())!!
+            .addOnSuccessListener(this) {
+                getLocation()
+            }.addOnFailureListener(this) { e ->
+                val statusCode = (e as ApiException).statusCode
+                when (statusCode) {
+                    LocationSettingsStatusCodes.RESOLUTION_REQUIRED -> {
+                        Log.i(TAG, resources.getString(R.string.location_settings_are_not_satisfied))
+                        try {
+                            val rae = e as ResolvableApiException
+                            rae.startResolutionForResult(this, KeyUtils.REQUEST_CHECK_SETTINGS)
+                        } catch (sie: IntentSender.SendIntentException) {
+                            Log.i(TAG, getString(R.string.pendingintent_unable_to_execute_request))
+//                            viewModel.fetchSavedLocation()
+                            sie.printStackTrace()
+                        }
+                    }
+                    LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE -> {
+                        val errorMessage =
+                            resources.getString(R.string.location_settings_are_inadequate_and_cannot_be_fixed_here)
+                        Logger.e(TAG, errorMessage)
+//                        viewModel.fetchSavedLocation()
+                    }
+                }
+            }
     }
 
     override fun onClick(v: View?) {
@@ -266,6 +331,7 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
                 finish()
             }
             R.id.tvAddress -> startVanillaMapBoxAutoCompleteActivity()
+            R.id.iv_my_location -> startLocationUpdates()
         }
     }
 
@@ -277,8 +343,17 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
         minCharLimit.let {
             intentPlacePicker.putExtra(KeyUtils.MIN_CHAR_LIMIT, it)
         }
-        language.let {
+        limit?.let {
+            intentPlacePicker.putExtra(KeyUtils.LIMIT, it)
+        }
+        language?.let {
             intentPlacePicker.putExtra(KeyUtils.LANGUAGE, it)
+        }
+        proximity?.let {
+            intentPlacePicker.putExtra(KeyUtils.PROXIMITY, it)
+        }
+        types?.let {
+            intentPlacePicker.putExtra(KeyUtils.TYPES, it)
         }
         startActivityForResult(intentPlacePicker, KeyUtils.REQUEST_PLACE_PICKER)
     }
@@ -294,6 +369,13 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
                         putExtra(KeyUtils.SELECTED_PLACE, data?.getSerializableExtra(KeyUtils.SELECTED_PLACE))
                     })
                     finish()
+                }
+            }
+            // Check for the integer request code originally supplied to startResolutionForResult().
+            KeyUtils.REQUEST_CHECK_SETTINGS -> when (resultCode) {
+                Activity.RESULT_CANCELED -> viewModel.fetchSavedLocation()
+                Activity.RESULT_OK -> {
+                  startLocationUpdates()
                 }
             }
         }

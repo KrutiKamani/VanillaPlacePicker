@@ -288,9 +288,13 @@ class VanillaPlacePicker {
         private var latitude: Double? = null
         private var longitude: Double? = null
         private var minCharLimit: Int? = null
+        private var limit: Int? = null
         private var style = Style.MAPBOX_STREETS
         private var styleUrl: String? = null
         private var language: String? = null
+        private var types: String? = null
+        private var proximityLongitude: Double? = null
+        private var proximityLatitude: Double? = null
 
         /**
          * To enable map view with place picker
@@ -332,8 +336,44 @@ class VanillaPlacePicker {
             return this
         }
 
+        /**
+         * Specify the user’s language. This parameter controls the language of the text supplied in responses,
+         * and also affects result scoring, with results matching the user’s query in the requested language
+         * being preferred over results that match in another language. For example, an autocomplete query for
+         * things that start with Frank might return Frankfurt as the first result with an English (en) language
+         * parameter, but Frankreich (“France”) with a German (de) language parameter.
+         */
         fun setLanguage(language: String): MapBoxBuilder {
             this.language = language
+            return this
+        }
+
+        /**
+         * Filter results to include only a subset (one or more) of the available feature types. Options are country,
+         * region, postcode, district, place, locality, neighborhood, address, and poi. Multiple options can be
+         * comma-separated. Note that poi.landmark is a deprecated type that, while still supported, returns the
+         * same data as is returned using the poi type.
+         */
+        fun setTypes(types: String): MapBoxBuilder {
+            this.types = types
+            return this
+        }
+
+        /**
+         * Specify the maximum number of results to return. The default is 5 and the maximum supported is 10.
+         */
+        fun setLimit(limit: Int): MapBoxBuilder {
+            this.limit = limit
+            return this
+        }
+
+        /**
+         * Bias the response to favor results that are closer to this location, provided as two comma-separated
+         * coordinates in longitude,latitude order.
+         */
+        fun setProximity(longitude: Double, latitude: Double): MapBoxBuilder {
+            this.proximityLongitude = longitude
+            this.proximityLatitude = latitude
             return this
         }
 
@@ -344,7 +384,7 @@ class VanillaPlacePicker {
                 Intent(context, VanillaMapBoxAutoCompleteActivity::class.java)
             }
 
-            if (accessToken.isRequiredField()){
+            if (accessToken.isRequiredField()) {
                 intent.putExtra(KeyUtils.MAPBOX_ACCESS_TOKEN, accessToken)
             } else {
                 throw RuntimeException("You must provide a Mapbox API access token for Mapbox tile sources.")
@@ -371,6 +411,18 @@ class VanillaPlacePicker {
 
             styleUrl?.let {
                 intent.putExtra(KeyUtils.MAPBOX_MAP_STYLE_URL, it)
+            }
+
+            limit?.let {
+                intent.putExtra((KeyUtils.LIMIT), it)
+            }
+
+            types?.let {
+                intent.putExtra(KeyUtils.TYPES, it)
+            }
+
+            if (proximityLongitude != null && proximityLongitude != null) {
+                intent.putExtra((KeyUtils.PROXIMITY), "$proximityLongitude,$proximityLatitude")
             }
 
             return intent

@@ -44,6 +44,8 @@ object KeyUtils {
     const val MAPBOX_MAP_STYLE = "mapBoxMapStyle"
     const val MAPBOX_MAP_STYLE_URL = "mapBoxMapStyleURL"
     const val MAPBOX_ACCESS_TOKEN = "access_token"
+    const val LIMIT = "limit"
+    const val PROXIMITY = "proximity"
 
     // status
     const val OK = "OK"
