@@ -47,9 +47,9 @@ class VanillaMapBoxAutoCompleteActivity : VanillaBaseViewModelActivity<VanillaMa
         getBundle()
         ivBack.setOnClickListener(this)
         ivClear.setOnClickListener(this)
-        rvRetribution?.setHasFixedSize(true)
-        rvRetribution?.setEmptyView(rvEmptyView)
-        rvRetribution?.adapter = autoCompleteAdapter
+        rvPlaces?.setHasFixedSize(true)
+        rvPlaces?.setEmptyView(rvEmptyView)
+        rvPlaces?.adapter = autoCompleteAdapter
 
         // call this method only once
         val hashMap = HashMap<String, String>()

@@ -26,8 +26,6 @@ import com.mapbox.mapboxsdk.Mapbox
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory
 import com.mapbox.mapboxsdk.geometry.LatLng
 import com.mapbox.mapboxsdk.location.LocationComponentActivationOptions
-import com.mapbox.mapboxsdk.location.modes.CameraMode
-import com.mapbox.mapboxsdk.location.modes.RenderMode
 import com.mapbox.mapboxsdk.maps.MapboxMap
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback
 import com.mapbox.mapboxsdk.maps.Style
@@ -172,7 +170,7 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
         }
     }
 
-    private fun enableLocationComponent(loadedMapStyle: Style){
+    private fun enableLocationComponent(loadedMapStyle: Style) {
 
         // Check if permissions are enabled and if not request
         if (PermissionsManager.areLocationPermissionsGranted(this)) {
@@ -330,7 +328,7 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
         // Begin by checking if the device has the necessary location settings.
         LocationServices.getSettingsClient(this).checkLocationSettings(locationSettingRequest.build())!!
             .addOnSuccessListener(this) {
-               initLocationEngine()
+                initLocationEngine()
             }.addOnFailureListener(this) { e ->
                 val statusCode = (e as ApiException).statusCode
                 when (statusCode) {
@@ -408,7 +406,8 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
             }
             // Check for the integer request code originally supplied to startResolutionForResult().
             KeyUtils.REQUEST_CHECK_SETTINGS -> when (resultCode) {
-                Activity.RESULT_CANCELED -> {}
+                Activity.RESULT_CANCELED -> {
+                }
                 Activity.RESULT_OK -> {
                     enableLocationComponent(mapBoxMap?.style!!)
                 }
@@ -426,20 +425,18 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
         override fun onSuccess(result: LocationEngineResult?) {
             val activity: VanillaMapBoxActivity = activityWeakReference.get()!!
 
-            if (activity != null) {
-                val location = result?.lastLocation ?: return
+            val location = result?.lastLocation ?: return
 
-                // Pass the new location to the Maps SDK's LocationComponent
-                if (activity.mapBoxMap != null && result.lastLocation != null) {
-                    activity.mapBoxMap!!.locationComponent.forceLocationUpdate(result.lastLocation)
-                }
-
-                location.let {
-                    viewModel.saveLatLngToSharedPref(location.latitude, location.longitude)
-                }
-                viewModel.fetchSavedLocation()
-                locationEngine!!.removeLocationUpdates(this)
+            // Pass the new location to the Maps SDK's LocationComponent
+            if (activity.mapBoxMap != null && result.lastLocation != null) {
+                activity.mapBoxMap!!.locationComponent.forceLocationUpdate(result.lastLocation)
             }
+
+            location.let {
+                viewModel.saveLatLngToSharedPref(location.latitude, location.longitude)
+            }
+            viewModel.fetchSavedLocation()
+            locationEngine!!.removeLocationUpdates(this)
         }
 
 
