@@ -1,6 +1,7 @@
 package com.vanillaplacepicker.presentation.builder
 
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -12,6 +13,8 @@ import com.vanillaplacepicker.presentation.mapbox.autocomplete.VanillaMapBoxAuto
 import com.vanillaplacepicker.presentation.mapbox.map.VanillaMapBoxActivity
 import com.vanillaplacepicker.utils.BundleUtils
 import com.vanillaplacepicker.utils.KeyUtils
+import com.vanillaplacepicker.utils.PickerLanguage
+import wrap
 
 class VanillaPlacePicker {
 
@@ -196,7 +199,16 @@ class VanillaPlacePicker {
         }
 
         /**
-         *
+         * Set picker language
+         */
+        fun setPickerLanguage(pickerLanguage: PickerLanguage): Builder {
+//            LocaleHelper.setLocale(context, pickerLanguage.value)
+            ContextWrapper(context).wrap(pickerLanguage.value)
+            return this
+        }
+
+        /**
+         * Get Google Places API key
          */
         private fun getApiKey(): String {
             val metadataBundle: Bundle? = BundleUtils.getMetaData(context)

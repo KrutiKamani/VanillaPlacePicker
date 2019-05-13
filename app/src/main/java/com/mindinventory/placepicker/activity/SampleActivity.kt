@@ -11,6 +11,7 @@ import com.vanillaplacepicker.domain.common.Style
 import com.vanillaplacepicker.extenstion.showView
 import com.vanillaplacepicker.presentation.builder.VanillaPlacePicker
 import com.vanillaplacepicker.utils.KeyUtils
+import com.vanillaplacepicker.utils.PickerLanguage
 import kotlinx.android.synthetic.main.activity_main.*
 
 class SampleActivity : AppCompatActivity(), View.OnClickListener {
@@ -39,43 +40,24 @@ class SampleActivity : AppCompatActivity(), View.OnClickListener {
     override fun onClick(v: View?) {
         when (v?.id) {
             R.id.cardviewPlacePickerSearch -> {
-//                val intent = VanillaPlacePicker.Builder(this)
-//                    .withLocation(23.057582, 72.534458)
-//                    .zoneLocale("en_US")
-//                    .zoneDefaultLocale(true)
-//                    .setRegion("IN")
-//                    .build()
-//                startActivityForResult(intent, KeyUtils.REQUEST_PLACE_PICKER)
-
-                // For Mapbox search
-                val intent= VanillaPlacePicker.MapBoxBuilder(this)
-                    .setAccessToken(resources.getString(R.string.mapbox_access_token))
-                    .withLocation(23.057582, 72.534458)
-//                    .setProximity(72.439313, 23.0201815)
-                    .setLanguage("en")
-                    .setLimit(8)
-//                    .setTypes("locality")
-                    .build()
+                val intent = VanillaPlacePicker.Builder(this)
+                        .withLocation(23.057582, 72.534458)
+                        .zoneLocale("en_US")
+                        .zoneDefaultLocale(true)
+                        .setTintColor(R.color.colorPrimaryAmber)
+                        .setPickerLanguage(PickerLanguage.ARABIC)
+                        .build()
                 startActivityForResult(intent, KeyUtils.REQUEST_PLACE_PICKER)
             }
 
             R.id.cardviewPlacePickerMap -> {
-//                val intent = VanillaPlacePicker.Builder(this)
-//                    .withLocation(23.057582, 72.534458)
-//                    .enableMap()
-//                    .zoneLocale("en_US")
-//                    .zoneDefaultLocale(true)
-//                    .build()
-//                startActivityForResult(intent, KeyUtils.REQUEST_PLACE_PICKER)
-
-                // For Mapbox map
-                val intent= VanillaPlacePicker.MapBoxBuilder(this)
-                    .setAccessToken(resources.getString(R.string.mapbox_access_token))
-//                    .withLocation(23.057582, 72.534458)
-                    .enableMap()
-//                    .setMapStyle("mapbox://styles/kruti/cjuw8s1ci1a111fqm0tac89p4")
-                    .setMapStyle(Style.MAPBOX_STREETS)
-                    .build()
+                val intent = VanillaPlacePicker.Builder(this)
+                        .withLocation(23.057582, 72.534458)
+                        .enableMap()
+                        .zoneLocale("en_US")
+                        .zoneDefaultLocale(true)
+                        .setPickerLanguage(PickerLanguage.HINDI)
+                        .build()
                 startActivityForResult(intent, KeyUtils.REQUEST_PLACE_PICKER)
             }
         }
