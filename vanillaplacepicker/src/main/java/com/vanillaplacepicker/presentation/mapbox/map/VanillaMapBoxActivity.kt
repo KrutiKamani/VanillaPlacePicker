@@ -14,10 +14,7 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.LocationSettingsRequest
 import com.google.android.gms.location.LocationSettingsStatusCodes
-import com.mapbox.android.core.location.LocationEngine
-import com.mapbox.android.core.location.LocationEngineCallback
-import com.mapbox.android.core.location.LocationEngineProvider
-import com.mapbox.android.core.location.LocationEngineResult
+import com.mapbox.android.core.location.*
 import com.mapbox.android.core.permissions.PermissionsListener
 import com.mapbox.android.core.permissions.PermissionsManager
 import com.mapbox.api.geocoding.v5.GeocodingCriteria
@@ -28,8 +25,12 @@ import com.mapbox.geojson.Point
 import com.mapbox.mapboxsdk.Mapbox
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory
 import com.mapbox.mapboxsdk.geometry.LatLng
+import com.mapbox.mapboxsdk.location.LocationComponentActivationOptions
+import com.mapbox.mapboxsdk.location.modes.CameraMode
+import com.mapbox.mapboxsdk.location.modes.RenderMode
 import com.mapbox.mapboxsdk.maps.MapboxMap
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback
+import com.mapbox.mapboxsdk.maps.Style
 import com.vanillaplacepicker.R
 import com.vanillaplacepicker.data.common.AddressMapperMapBoxMap
 import com.vanillaplacepicker.domain.common.SafeObserver
@@ -44,9 +45,10 @@ import kotlinx.android.synthetic.main.toolbar.*
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.lang.ref.WeakReference
 
 class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewModel>(), OnMapReadyCallback,
-    View.OnClickListener, PermissionsListener, LocationEngineCallback<LocationEngineResult> {
+    View.OnClickListener, PermissionsListener {
 
     private val TAG = VanillaMapBoxActivity::class.java.simpleName
 
@@ -66,8 +68,15 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
     private var proximity: String? = null
     private var types: String? = null
 
+    private var DEFAULT_INTERVAL_IN_MILLISECONDS = 1000L
+    private var DEFAULT_MAX_WAIT_TIME = DEFAULT_INTERVAL_IN_MILLISECONDS * 5
+
     private var permissionsManager: PermissionsManager = PermissionsManager(this)
     private val sharedPrefs by lazy { SharedPrefs(this) }
+
+    // Variables needed to listen to location updates
+    private var callback = LocationCallback()
+    var activityWeakReference: WeakReference<VanillaMapBoxActivity> = WeakReference<VanillaMapBoxActivity>(this)
 
     private var selectedPlace: CarmenFeature? = null
 
@@ -156,16 +165,59 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
             // Map is set up and the style has loaded. Now you can add data or make other map adjustments
             if (!isRequestedWithLocation) {
                 iv_my_location.visibility = View.VISIBLE
-                // Check if permissions are enabled and if not request
-                if (PermissionsManager.areLocationPermissionsGranted(this)) {
-                    startLocationUpdates()
-                } else {
-                    requestForLocationPermission()
-                }
+                enableLocationComponent(it)
             } else {
                 moveCameraToPosition(LatLng(latitude, longitude))
             }
         }
+    }
+
+    private fun enableLocationComponent(loadedMapStyle: Style){
+
+        // Check if permissions are enabled and if not request
+        if (PermissionsManager.areLocationPermissionsGranted(this)) {
+
+            // Get an instance of the component
+            val locationComponent = mapBoxMap?.locationComponent
+
+            // Set the LocationComponent activation options
+            val locationComponentActivationOptions =
+                LocationComponentActivationOptions.builder(this, loadedMapStyle)
+                    .useDefaultLocationEngine(false)
+                    .build()
+
+            // Activate with the LocationComponentActivationOptions object
+            locationComponent?.activateLocationComponent(locationComponentActivationOptions)
+
+            // Enable to make component visible
+            locationComponent?.isLocationComponentEnabled = false
+
+            // Set the component's camera mode
+//            locationComponent?.cameraMode = CameraMode.TRACKING
+
+            // Set the component's render mode
+//            locationComponent?.renderMode = RenderMode.COMPASS
+
+            startLocationUpdates()
+        } else {
+            requestForLocationPermission()
+        }
+    }
+
+    /**
+     * Set up the LocationEngine and the parameters for querying the device's location
+     */
+    @SuppressLint("MissingPermission")
+    private fun initLocationEngine() {
+        locationEngine = LocationEngineProvider.getBestLocationEngine(this)
+
+        val request = LocationEngineRequest.Builder(DEFAULT_INTERVAL_IN_MILLISECONDS)
+            .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
+            .setMaxWaitTime(DEFAULT_MAX_WAIT_TIME).build()
+
+        locationEngine!!.requestLocationUpdates(request, callback, mainLooper)
+
+        locationEngine!!.getLastLocation(callback)
     }
 
     private fun requestForLocationPermission() {
@@ -238,25 +290,6 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
         })
     }
 
-    @SuppressLint("MissingPermission")
-    private fun getLocation() {
-        locationEngine = LocationEngineProvider.getBestLocationEngine(this)
-        locationEngine!!.getLastLocation(this)
-    }
-
-    override fun onSuccess(result: LocationEngineResult?) {
-        val location = result?.lastLocation
-
-        location?.let {
-            viewModel.saveLatLngToSharedPref(location.latitude, location.longitude)
-        }
-        viewModel.fetchSavedLocation()
-        locationEngine!!.removeLocationUpdates(this)
-    }
-
-    override fun onFailure(exception: java.lang.Exception) {
-    }
-
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         permissionsManager.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
@@ -266,7 +299,9 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
 
     override fun onPermissionResult(granted: Boolean) {
         if (granted) {
-            startLocationUpdates()
+            if (mapBoxMap?.style != null) {
+                enableLocationComponent(mapBoxMap?.style!!)
+            }
         } else {
             showAlertDialog(
                 R.string.missing_permission_message,
@@ -295,7 +330,7 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
         // Begin by checking if the device has the necessary location settings.
         LocationServices.getSettingsClient(this).checkLocationSettings(locationSettingRequest.build())!!
             .addOnSuccessListener(this) {
-                getLocation()
+               initLocationEngine()
             }.addOnFailureListener(this) { e ->
                 val statusCode = (e as ApiException).statusCode
                 when (statusCode) {
@@ -331,7 +366,7 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
                 finish()
             }
             R.id.tvAddress -> startVanillaMapBoxAutoCompleteActivity()
-            R.id.iv_my_location -> startLocationUpdates()
+            R.id.iv_my_location -> enableLocationComponent(mapBoxMap?.style!!)
         }
     }
 
@@ -373,12 +408,49 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
             }
             // Check for the integer request code originally supplied to startResolutionForResult().
             KeyUtils.REQUEST_CHECK_SETTINGS -> when (resultCode) {
-                Activity.RESULT_CANCELED -> viewModel.fetchSavedLocation()
+                Activity.RESULT_CANCELED -> {}
                 Activity.RESULT_OK -> {
-                  startLocationUpdates()
+                    enableLocationComponent(mapBoxMap?.style!!)
                 }
             }
         }
+    }
+
+    private inner class LocationCallback : LocationEngineCallback<LocationEngineResult> {
+
+        /**
+         * The LocationEngineCallback interface's method which fires when the device's location has changed.
+         *
+         * @param result the LocationEngineResult object which has the last known location within it.
+         */
+        override fun onSuccess(result: LocationEngineResult?) {
+            val activity: VanillaMapBoxActivity = activityWeakReference.get()!!
+
+            if (activity != null) {
+                val location = result?.lastLocation ?: return
+
+                // Pass the new location to the Maps SDK's LocationComponent
+                if (activity.mapBoxMap != null && result.lastLocation != null) {
+                    activity.mapBoxMap!!.locationComponent.forceLocationUpdate(result.lastLocation)
+                }
+
+                location.let {
+                    viewModel.saveLatLngToSharedPref(location.latitude, location.longitude)
+                }
+                viewModel.fetchSavedLocation()
+                locationEngine!!.removeLocationUpdates(this)
+            }
+        }
+
+
+        /**
+         * The LocationEngineCallback interface's method which fires when the device's location can not be captured
+         *
+         * @param exception the exception message
+         */
+        override fun onFailure(exception: Exception) {
+        }
+
     }
 
     public override fun onStart() {
@@ -408,6 +480,11 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
 
     override fun onDestroy() {
         super.onDestroy()
+
+        // Prevent leaks
+        if (locationEngine != null) {
+            locationEngine!!.removeLocationUpdates(callback)
+        }
         mapView.onDestroy()
     }
 
