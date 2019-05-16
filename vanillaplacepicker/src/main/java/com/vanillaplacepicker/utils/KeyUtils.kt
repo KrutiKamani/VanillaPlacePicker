@@ -46,6 +46,7 @@ object KeyUtils {
     const val MAPBOX_ACCESS_TOKEN = "access_token"
     const val LIMIT = "limit"
     const val PROXIMITY = "proximity"
+    const val COUNTRY = "country"
 
     // status
     const val OK = "OK"

@@ -55,6 +55,7 @@ class SampleActivity : AppCompatActivity(), View.OnClickListener {
                     .withLocation(23.057582, 72.534458)
 //                    .setProximity(72.439313, 23.0201815)
                     .setLanguage("en")
+                    .setCountry("us,in")
                     .setLimit(8)
 //                    .setTypes("locality")
                     .build()

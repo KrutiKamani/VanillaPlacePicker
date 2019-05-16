@@ -29,6 +29,7 @@ class VanillaMapBoxAutoCompleteActivity : VanillaBaseViewModelActivity<VanillaMa
     private var minCharLimit: Int = 3
     private var limit: Int? = null
     private var language: String? = null
+    private var country: String? = null
     private var proximity: String? = null
     private var types: String? = null
 
@@ -60,6 +61,9 @@ class VanillaMapBoxAutoCompleteActivity : VanillaBaseViewModelActivity<VanillaMa
         language?.let {
             hashMap.put(KeyUtils.LANGUAGE, it)
         }
+        country?.let {
+            hashMap.put(KeyUtils.COUNTRY, it)
+        }
         proximity?.let {
             hashMap.put(KeyUtils.PROXIMITY, it)
         }
@@ -83,6 +87,10 @@ class VanillaMapBoxAutoCompleteActivity : VanillaBaseViewModelActivity<VanillaMa
 
         if (hasExtra(KeyUtils.LANGUAGE)) {
             language = intent.getStringExtra(KeyUtils.LANGUAGE)
+        }
+
+        if (hasExtra(KeyUtils.COUNTRY)) {
+            country = intent.getStringExtra(KeyUtils.COUNTRY)
         }
 
         if (hasExtra(KeyUtils.MIN_CHAR_LIMIT)) {

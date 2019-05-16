@@ -304,6 +304,7 @@ class VanillaPlacePicker {
         private var style = Style.MAPBOX_STREETS
         private var styleUrl: String? = null
         private var language: String? = null
+        private var country: String? = null
         private var types: String? = null
         private var proximityLongitude: Double? = null
         private var proximityLatitude: Double? = null
@@ -389,6 +390,16 @@ class VanillaPlacePicker {
             return this
         }
 
+        /**
+         * Limit results to one or more countries. Permitted values are ISO 3166 alpha 2 :
+         * "https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2" country codes separated
+         * by commas.
+         */
+        fun setCountry(country: String): MapBoxBuilder {
+            this.country = country
+            return this
+        }
+
         fun build(): Intent {
             val intent = if (isMapEnable) {
                 Intent(context, VanillaMapBoxActivity::class.java)
@@ -416,6 +427,10 @@ class VanillaPlacePicker {
 
             language?.let {
                 intent.putExtra(KeyUtils.LANGUAGE, it)
+            }
+
+            country?.let {
+                intent.putExtra(KeyUtils.COUNTRY, it)
             }
 
             val mapStyle = findStyle(style)

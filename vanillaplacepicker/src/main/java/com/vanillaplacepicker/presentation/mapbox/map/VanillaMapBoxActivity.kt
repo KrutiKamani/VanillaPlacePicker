@@ -63,6 +63,7 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
     private var minCharLimit: Int = 3
     private var limit: Int? = null
     private var language: String? = null
+    private var country: String? = null
     private var proximity: String? = null
     private var types: String? = null
 
@@ -127,6 +128,10 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
 
         if (hasExtra(KeyUtils.LANGUAGE)) {
             language = intent.getStringExtra(KeyUtils.LANGUAGE)
+        }
+
+        if (hasExtra(KeyUtils.COUNTRY)) {
+            country = intent.getStringExtra(KeyUtils.COUNTRY)
         }
 
         if (hasExtra(KeyUtils.MIN_CHAR_LIMIT)) {
@@ -381,6 +386,9 @@ class VanillaMapBoxActivity : VanillaBaseViewModelActivity<VanillaMapBoxViewMode
         }
         language?.let {
             intentPlacePicker.putExtra(KeyUtils.LANGUAGE, it)
+        }
+        country?.let {
+            intentPlacePicker.putExtra(KeyUtils.COUNTRY, it)
         }
         proximity?.let {
             intentPlacePicker.putExtra(KeyUtils.PROXIMITY, it)
